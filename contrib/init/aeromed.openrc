@@ -1,0 +1,86 @@
+#!/sbin/runscript
+
+# backward compatibility for existing gentoo layout 
+#
+if [ -d "/var/lib/aerome/.aerome" ]; then
+	AEROMED_DEFAULT_DATADIR="/var/lib/aerome/.aerome"
+else
+	AEROMED_DEFAULT_DATADIR="/var/lib/aeromed"
+fi
+
+AEROMED_CONFIGFILE=${AEROMED_CONFIGFILE:-/etc/aerome/aerome.conf}
+AEROMED_PIDDIR=${AEROMED_PIDDIR:-/var/run/aeromed}
+AEROMED_PIDFILE=${AEROMED_PIDFILE:-${AEROMED_PIDDIR}/aeromed.pid}
+AEROMED_DATADIR=${AEROMED_DATADIR:-${AEROMED_DEFAULT_DATADIR}}
+AEROMED_USER=${AEROMED_USER:-aerome}
+AEROMED_GROUP=${AEROMED_GROUP:-aerome}
+AEROMED_BIN=${AEROMED_BIN:-/usr/bin/aeromed}
+
+name="Aerome Core Daemon"
+description="Aerome crypto-currency p2p network daemon"
+
+command="/usr/bin/aeromed"
+command_args="-pid=\"${AEROMED_PIDFILE}\" \
+		-conf=\"${AEROMED_CONFIGFILE}\" \
+		-datadir=\"${AEROMED_DATADIR}\" \
+		-daemon \
+		${AEROMED_OPTS}"
+
+required_files="${AEROMED_CONFIGFILE}"
+start_stop_daemon_args="-u ${AEROMED_USER} \
+			-N ${AEROMED_NICE:-0} -w 2000"
+pidfile="${AEROMED_PIDFILE}"
+retry=60
+
+depend() {
+	need localmount net
+}
+
+# verify
+# 1) that the datadir exists and is writable (or create it)
+# 2) that a directory for the pid exists and is writable
+# 3) ownership and permissions on the config file
+start_pre() {
+	checkpath \
+	-d \
+	--mode 0750 \
+	--owner "${AEROMED_USER}:${AEROMED_GROUP}" \
+	"${AEROMED_DATADIR}"
+
+	checkpath \
+	-d \
+	--mode 0755 \
+	--owner "${AEROMED_USER}:${AEROMED_GROUP}" \
+	"${AEROMED_PIDDIR}"
+
+	checkpath -f \
+	-o ${AEROMED_USER}:${AEROMED_GROUP} \
+	-m 0660 \
+	${AEROMED_CONFIGFILE}
+
+	checkconfig || return 1
+}
+
+checkconfig()
+{
+	if ! grep -qs '^rpcpassword=' "${AEROMED_CONFIGFILE}" ; then
+		eerror ""
+		eerror "ERROR: You must set a secure rpcpassword to run aeromed."
+		eerror "The setting must appear in ${AEROMED_CONFIGFILE}"
+		eerror ""
+		eerror "This password is security critical to securing wallets "
+		eerror "and must not be the same as the rpcuser setting."
+		eerror "You can generate a suitable random password using the following"
+		eerror "command from the shell:"
+		eerror ""
+		eerror "bash -c 'tr -dc a-zA-Z0-9 < /dev/urandom | head -c32 && echo'"
+		eerror ""
+		eerror "It is also recommended that you also set alertnotify so you are "
+		eerror "notified of problems:"
+		eerror ""
+		eerror "ie: alertnotify=echo %%s | mail -s \"Aerome Alert\"" \
+			"admin@foo.com"
+		eerror ""
+		return 1
+	fi
+}

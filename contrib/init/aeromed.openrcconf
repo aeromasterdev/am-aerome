@@ -1,0 +1,26 @@
+# /etc/conf.d/aeromed: config file for /etc/init.d/aeromed
+
+# Config file location
+#AEROMED_CONFIGFILE="/etc/aerome/aerome.conf"
+
+# What directory to write pidfile to?  (created and owned by $AEROMED_USER)
+#AEROMED_PIDDIR="/var/run/aeromed"
+
+# What filename to give the pidfile
+#AEROMED_PIDFILE="${AEROMED_PIDDIR}/aeromed.pid"
+
+# Where to write aeromed data (be mindful that the blockchain is large)
+#AEROMED_DATADIR="/var/lib/aeromed"
+
+# User and group to own aeromed process
+#AEROMED_USER="aerome"
+#AEROMED_GROUP="aerome"
+
+# Path to aeromed executable
+#AEROMED_BIN="/usr/bin/aeromed"
+
+# Nice value to run aeromed under
+#AEROMED_NICE=0
+
+# Additional options (avoid -conf and -datadir, use flags above)
+AEROMED_OPTS="-disablewallet"
